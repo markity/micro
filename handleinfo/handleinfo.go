@@ -1,4 +1,4 @@
-package serviceinfo
+package handleinfo
 
 type HandleType int
 

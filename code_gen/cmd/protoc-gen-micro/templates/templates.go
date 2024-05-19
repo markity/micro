@@ -28,7 +28,7 @@ package {{ .ServiceLowerName }}
 
 import (
 	"context"
-	_micro_errcode "github.com/markity/micro/serviceinfo/errcode"
+	_micro_errcode "github.com/markity/micro/errcode"
 	{{- range .ImportPaths }}
 	{{ .Alias }} {{ .ImportPath }}
 	{{- end }}

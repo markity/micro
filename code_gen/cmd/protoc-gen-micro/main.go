@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -108,43 +109,72 @@ func main() {
 
 			dir, _ := filepath.Split(v.GeneratedFilenamePrefix)
 			for _, service := range v.Services {
+				// 为每个service生成一个文件夹, 生成service.go, client.go, server.go
 				lowerServiceName := strings.ToLower(service.GoName)
 				genServiceDotGo := filepath.Join(dir, lowerServiceName, "service.go")
 				genServerDotGo := filepath.Join(dir, lowerServiceName, "server.go")
 				genClientDotGo := filepath.Join(dir, lowerServiceName, "client.go")
 
-				protoImport, err := filepath.Rel(modPath, filepath.Join(genPath, filepath.Dir(service.Location.SourceFile)))
-				if err != nil {
-					panic(err)
+				debugInfo.WriteString(service.Methods[0].Input.GoIdent.GoImportPath.String() + "2\n")
+				idx := 1
+				protoIndexToImportPath := map[int]string{}
+				importPathToAlias := map[string]string{}
+				for _, v := range service.Methods {
+					protoIndexToImportPath[v.Input.Desc.Index()] = v.Input.GoIdent.GoImportPath.String()
+					protoIndexToImportPath[v.Output.Desc.Index()] = v.Output.GoIdent.GoImportPath.String()
+					if _, ok := importPathToAlias[v.Input.GoIdent.GoImportPath.String()]; !ok {
+						importPathToAlias[v.Input.GoIdent.GoImportPath.String()] = fmt.Sprintf("_proto_%v", idx)
+						idx++
+					}
+					if _, ok := importPathToAlias[v.Output.GoIdent.GoImportPath.String()]; !ok {
+						importPathToAlias[v.Output.GoIdent.GoImportPath.String()] = fmt.Sprintf("_proto_%v", idx)
+						idx++
+					}
 				}
-				protoImport = filepath.Join(modName, protoImport)
+
+				importPaths := make([]struct {
+					Alias      string
+					ImportPath string
+				}, 0)
+				for k, v := range importPathToAlias {
+					importPaths = append(importPaths, struct {
+						Alias      string
+						ImportPath string
+					}{
+						Alias:      v,
+						ImportPath: k,
+					})
+				}
 
 				serviceFileInput := struct {
 					ServiceLowerName string
-					ProtoImportPath  string
-					AllMethods       []struct {
-						RawName       string
-						ArgStructName string
-						ResStructName string
+					ImportPaths      []struct {
+						Alias      string
+						ImportPath string
+					}
+					AllMethods []struct {
+						RawName      string
+						ArgStructStr string
+						ResStructStr string
 					}
 				}{
 					ServiceLowerName: lowerServiceName,
-					ProtoImportPath:  protoImport,
+					ImportPaths:      importPaths,
 					AllMethods: make([]struct {
-						RawName       string
-						ArgStructName string
-						ResStructName string
+						RawName      string
+						ArgStructStr string
+						ResStructStr string
 					}, 0),
 				}
 				for _, method := range service.Methods {
 					serviceFileInput.AllMethods = append(serviceFileInput.AllMethods, struct {
-						RawName       string
-						ArgStructName string
-						ResStructName string
+						RawName      string
+						ArgStructStr string
+						ResStructStr string
 					}{
-						RawName:       method.GoName,
-						ArgStructName: method.Input.GoIdent.GoName,
-						ResStructName: method.Output.GoIdent.GoName,
+						RawName:      method.GoName,
+						ArgStructStr: importPathToAlias[protoIndexToImportPath[method.Input.Desc.Index()]] + "." + method.Input.GoIdent.GoName,
+						ResStructStr: importPathToAlias[protoIndexToImportPath[method.Output.Desc.Index()]] + "." + method.Output.GoIdent.GoName,
 					})
 				}
 				serviceFile := plugin.NewGeneratedFile(genServiceDotGo, "")
@@ -153,8 +183,31 @@ func main() {
 					panic(err)
 				}
 				tmp.Execute(serviceFile, serviceFileInput)
+
 				serverFile := plugin.NewGeneratedFile(genServerDotGo, "")
-				serverFile.P("package " + lowerServiceName)
+				serverFileInput := struct {
+					ServiceLowerName string
+					ServiceName      string
+					AllMethods       []struct {
+						RawName      string
+						ArgStructStr string
+						ResStructStr string
+					}
+					ImportPaths []struct {
+						Alias      string
+						ImportPath string
+					}
+				}{
+					ServiceLowerName: lowerServiceName,
+					ServiceName:      service.GoName,
+					AllMethods:       serviceFileInput.AllMethods,
+					ImportPaths:      importPaths,
+				}
+				tmpServer, err := template.New("").Parse(templates.ServerDotGo)
+				if err != nil {
+					panic(err)
+				}
+				tmpServer.Execute(serverFile, serverFileInput)
 				clientFile := plugin.NewGeneratedFile(genClientDotGo, "")
 				clientFile.P("package " + lowerServiceName)
 			}

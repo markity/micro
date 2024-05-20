@@ -29,6 +29,7 @@ package {{ .ServiceLowerName }}
 import (
 	"context"
 	_micro_errcode "github.com/markity/micro/errcode"
+	_micro_server "github.com/markity/micro/server"
 	{{- range .ImportPaths }}
 	{{ .Alias }} {{ .ImportPath }}
 	{{- end }}
@@ -38,6 +39,10 @@ type {{ .ServiceNameFirstCharUpper }} interface {
 	{{- range .AllMethods }}
 	{{ .RawName }}(ctx context.Context, req *{{ .ArgStructStr }}) (resp *{{.ResStructStr}}, errcode *_micro_errcode.ErrCode)
 	{{- end}}
+}
+
+func NewServer(serviceName string, addrPort string, implementedServer Echo) _micro_server.MicroServer {
+	return _micro_server.NewServer(serviceName, addrPort, implementedServer, serviceMethods)
 }
 
 type UnimplementedService struct {}

@@ -17,7 +17,11 @@ type microServer struct {
 }
 
 func (ms *microServer) Run() error {
-	return ms.Run()
+	if err := ms.server.Start(); err != nil {
+		return err
+	}
+	ms.baseLoop.Loop()
+	return nil
 }
 
 var serviceNameContextKey = "svc_name"

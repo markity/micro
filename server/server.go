@@ -24,7 +24,7 @@ var serviceNameContextKey = "svc_name"
 var implementedServerContextKey = "implement"
 var handlesContextKey = "handle_info"
 
-func NewServer(serviceName string, addrPort string, implementedServer interface{}, handles map[string]*handleinfo.HandleInfo) MicroServer {
+func NewServer(serviceName string, addrPort string, implementedServer interface{}, handles map[string]handleinfo.HandleInfo) MicroServer {
 	baseLoop := eventloop.NewEventLoop()
 	reactorServer := goreactor.NewTCPServer(baseLoop, addrPort, utils.GetNThreads(), goreactor.RoundRobin())
 	reactorServer.SetConnectionCallback(handleConn)

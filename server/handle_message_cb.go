@@ -30,7 +30,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 	}
 
 	handinfos := conn.GetEventLoop().
-		MustGetContext(handlesContextKey).(map[string]*handleinfo.HandleInfo)
+		MustGetContext(handlesContextKey).(map[string]handleinfo.HandleInfo)
 	implement := conn.GetEventLoop().
 		MustGetContext(implementedServerContextKey)
 

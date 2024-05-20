@@ -197,11 +197,13 @@ func main() {
 						Alias      string
 						ImportPath string
 					}
+					ServiceNameFirstCharUpper string
 				}{
-					ServiceLowerName: lowerServiceName,
-					ServiceName:      service.GoName,
-					AllMethods:       serviceFileInput.AllMethods,
-					ImportPaths:      importPaths,
+					ServiceLowerName:          lowerServiceName,
+					ServiceName:               service.GoName,
+					AllMethods:                serviceFileInput.AllMethods,
+					ImportPaths:               importPaths,
+					ServiceNameFirstCharUpper: strings.ToUpper(service.GoName)[0:1] + service.GoName[1:],
 				}
 				tmpServer, err := template.New("").Parse(templates.ServerDotGo)
 				if err != nil {

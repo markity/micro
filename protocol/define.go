@@ -21,7 +21,9 @@ package protocol
 type ProtocolErrorType byte
 
 // 错误代码为1或2时 4字节errcode长度 + 4字节proto buf长度 均为 0
+
 var ProtocolErrorTypeSuccess ProtocolErrorType = 0
-var ProtocolErrorTypeHandleNameInvalid ProtocolErrorType = 1
-var ProtocolErrorTypeParseProtoFailed ProtocolErrorType = 2
-var ProtocolErrorUnexpected ProtocolErrorType = 3
+var ProtocolErrorTypeHandleNameInvalid ProtocolErrorType = 1      // handlename无法被对方理解
+var ProtocolErrorTypeServerParseProtoFailed ProtocolErrorType = 2 // 服务端处协议错误
+var ProtocolErrorTypeClientParseProtoFailed ProtocolErrorType = 3 // 客户端处协议错误
+var ProtocolErrorUnexpected ProtocolErrorType = 4                 // 未知协议错误

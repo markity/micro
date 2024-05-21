@@ -50,7 +50,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 	implementReflectValue := reflect.ValueOf(implement)
 
 	if err := proto.Unmarshal(protoBody, reqReflectValue.Interface().(proto.Message)); err != nil {
-		conn.Send([]byte{byte(protocol.ProtocolErrorTypeParseProtoFailed)})
+		conn.Send([]byte{byte(protocol.ProtocolErrorTypeServerParseProtoFailed)})
 		conn.Send(double0Uint32Byts)
 		return
 	}

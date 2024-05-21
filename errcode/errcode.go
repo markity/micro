@@ -6,6 +6,7 @@ import (
 	"github.com/markity/micro/protocol"
 )
 
+// biz error define
 type ErrCode struct {
 	Code int
 	Msg  string
@@ -16,10 +17,10 @@ func (errcode *ErrCode) Error() string {
 	return fmt.Sprintf("ErrCode: code(%v), msg(%v), data(%v)", errcode.Code, errcode.Msg, errcode.Data)
 }
 
-type NetworkError struct{}
-
-func (ne *NetworkError) Error() string {
-	return "Network Error"
+type ClientCallError interface {
+	IsNetworkError() (error, bool)
+	IsBizError() (*ErrCode, bool)
+	IsProtocolError() (*ProtocolError, bool)
 }
 
 type ProtocolError struct {
@@ -32,26 +33,13 @@ func (pe *ProtocolError) Error() string {
 		return "success"
 	case protocol.ProtocolErrorTypeHandleNameInvalid:
 		return "handle name invalid"
-	case protocol.ProtocolErrorTypeParseProtoFailed:
-		return "parse proto failed"
+	case protocol.ProtocolErrorTypeServerParseProtoFailed:
+		return "server parse proto failed"
+	case protocol.ProtocolErrorTypeClientParseProtoFailed:
+		return "client parse proto failed"
 	case protocol.ProtocolErrorUnexpected:
 		return "unexpected"
 	}
 
 	return "unknown"
-}
-
-func IsNetworkError(err error) bool {
-	_, ok := err.(*NetworkError)
-	return ok
-}
-
-func IsBizError(err error) bool {
-	_, ok := err.(*ErrCode)
-	return ok
-}
-
-func IsProtocolError(err error) bool {
-	_, ok := err.(*ProtocolError)
-	return ok
 }

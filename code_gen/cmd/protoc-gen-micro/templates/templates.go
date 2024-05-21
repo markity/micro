@@ -63,6 +63,7 @@ package echo
 
 import (
 	_micro_client "github.com/markity/micro/client"
+	_micro_errcode "github.com/markity/micro/errcode"
 	{{- range .ImportPaths }}
 	{{ .Alias }} {{ .ImportPath }}
 	{{- end }}
@@ -70,7 +71,7 @@ import (
 
 type {{ .ServiceNameFirstCharUpper }}Client interface {
 	{{- range .AllMethods }}
-	{{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, error)
+	{{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, *_micro_errcode.ClientCallError)
 	{{- end}}
 }
 
@@ -80,7 +81,7 @@ type {{ .ServiceLowerName }}Client struct {
 }
 
 {{- range .AllMethods }}
-func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, error) {
+func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, *_micro_errcode.ClientCallError) {
 	result1Iface, result2 := cli.cliStub.Call("{{ .RawName }}", req)
 	if result1Iface != nil {
 		return result1Iface.(*_proto_2.EchoResponse), result2

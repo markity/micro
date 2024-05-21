@@ -17,7 +17,7 @@ import (
 )
 
 type MicroClient interface {
-	Call(handleName string, input proto.Message) (interface{}, error)
+	Call(handleName string, input proto.Message) (interface{}, errcode.ClientCallError)
 }
 
 type microClient struct {
@@ -35,7 +35,7 @@ func NewClient(serviceName string, handles map[string]handleinfo.HandleInfo) Mic
 }
 
 // error is either errcode.Errcode or errcode.NetworkError or errcode.ProtocolError
-func (cli *microClient) Call(handleName string, input proto.Message) (interface{}, error) {
+func (cli *microClient) Call(handleName string, input proto.Message) (interface{}, errcode.ClientCallError) {
 	inputMarshalBytes, err := proto.Marshal(input)
 	if err != nil {
 		panic(err)
@@ -48,11 +48,9 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 
 	c := make(chan struct{}, 1)
 	var networkError error
-	var protocolError error
-	hasProtoResult := false
-	hasErrorResult := false
-	var protoBytes []byte
-	var errcodeBytes []byte
+	var protocolError *errcode.ProtocolError
+	var result1 interface{}
+	var result2 errcode.ClientCallError
 	go func() {
 		defer func() {
 			c <- struct{}{}
@@ -62,7 +60,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 		beforeDial := time.Now()
 		conn, err := net.DialTimeout("tcp", cli.serviceName, cli.timeoutDuration)
 		if err != nil {
-			networkError = &errcode.NetworkError{}
+			networkError = err
 			return
 		}
 		defer conn.Close()
@@ -82,7 +80,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 		_, err = io.ReadFull(conn, preBytes[:])
 		if err != nil {
 			fmt.Println(err)
-			networkError = &errcode.NetworkError{}
+			networkError = err
 			return
 		}
 
@@ -101,9 +99,9 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 				}
 			}
 			return
-		case protocol.ProtocolErrorTypeParseProtoFailed:
+		case protocol.ProtocolErrorTypeServerParseProtoFailed:
 			protocolError = &errcode.ProtocolError{
-				Code: protocol.ProtocolErrorTypeParseProtoFailed,
+				Code: protocol.ProtocolErrorTypeServerParseProtoFailed,
 			}
 			if protoBodySize != 0 || errorCodeSize != 0 {
 				protocolError = &errcode.ProtocolError{
@@ -115,56 +113,76 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 		}
 		// success的情况
 		if protoBodySize != 0 {
-			hasProtoResult = true
 			bs := make([]byte, protoBodySize)
 			_, err := io.ReadFull(conn, bs)
 			if err != nil {
-				networkError = &errcode.NetworkError{}
+				networkError = err
 				return
 			}
-			protoBytes = bs
+
+			protoVal := reflect.New(reflect.TypeOf(handle.Response).Elem()).Interface().(proto.Message)
+			err = proto.Unmarshal(bs, protoVal)
+			if err != nil {
+				protocolError = &errcode.ProtocolError{
+					Code: protocol.ProtocolErrorTypeClientParseProtoFailed,
+				}
+			}
+			result1 = protoVal
 		}
 		if errorCodeSize != 0 {
-			hasErrorResult = true
 			bs := make([]byte, errorCodeSize)
 			_, err := io.ReadFull(conn, bs)
 			if err != nil {
-				networkError = &errcode.NetworkError{}
+				networkError = err
 				return
 			}
-			errcodeBytes = bs
+
+			ec := errcode.ErrCode{}
+			err = gob.NewDecoder(bytes.NewReader(bs)).Decode(&ec)
+			if err != nil {
+				protocolError = &errcode.ProtocolError{
+					Code: protocol.ProtocolErrorTypeClientParseProtoFailed,
+				}
+			}
+			result2 = &clientCallError{
+				isBizError: true,
+				bizError:   &ec,
+			}
 		}
 	}()
 	<-c
 	if networkError != nil {
-		return nil, networkError
+		return nil, &clientCallError{
+			isNetworkError: true,
+			networkError:   networkError,
+		}
 	}
 	if protocolError != nil {
-		return nil, protocolError
-	}
-
-	var result1 interface{}
-	var result2 error
-	if hasProtoResult {
-		protoVal := reflect.New(reflect.TypeOf(handle.Response).Elem()).Interface().(proto.Message)
-		err := proto.Unmarshal(protoBytes, protoVal)
-		if err != nil {
-			return nil, &errcode.ProtocolError{
-				Code: protocol.ProtocolErrorTypeParseProtoFailed,
-			}
+		return nil, &clientCallError{
+			isProtocolError: true,
+			protocolError:   protocolError,
 		}
-		result1 = protoVal
-	}
-	if hasErrorResult {
-		ec := errcode.ErrCode{}
-		err := gob.NewDecoder(bytes.NewReader(errcodeBytes)).Decode(&ec)
-		if err != nil {
-			return nil, &errcode.ProtocolError{
-				Code: protocol.ProtocolErrorTypeParseProtoFailed,
-			}
-		}
-		result2 = &ec
 	}
 
 	return result1, result2
+}
+
+type clientCallError struct {
+	isNetworkError  bool
+	isProtocolError bool
+	isBizError      bool
+
+	bizError      *errcode.ErrCode
+	networkError  error
+	protocolError *errcode.ProtocolError
+}
+
+func (e *clientCallError) IsNetworkError() (error, bool) {
+	return e.networkError, e.isNetworkError
+}
+func (e *clientCallError) IsBizError() (*errcode.ErrCode, bool) {
+	return e.bizError, e.isBizError
+}
+func (e *clientCallError) IsProtocolError() (*errcode.ProtocolError, bool) {
+	return e.protocolError, e.isProtocolError
 }

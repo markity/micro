@@ -119,6 +119,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 				networkError = err
 				return
 			}
+			fmt.Println(bs)
 
 			protoVal := reflect.New(reflect.TypeOf(handle.Response).Elem()).Interface().(proto.Message)
 			err = proto.Unmarshal(bs, protoVal)
@@ -126,6 +127,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 				protocolError = &errcode.ProtocolError{
 					Code: protocol.ProtocolErrorTypeClientParseProtoFailed,
 				}
+				return
 			}
 			result1 = protoVal
 		}
@@ -136,6 +138,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 				networkError = err
 				return
 			}
+			fmt.Println(bs)
 
 			ec := errcode.ErrCode{}
 			err = gob.NewDecoder(bytes.NewReader(bs)).Decode(&ec)
@@ -143,6 +146,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 				protocolError = &errcode.ProtocolError{
 					Code: protocol.ProtocolErrorTypeClientParseProtoFailed,
 				}
+				return
 			}
 			result2 = &clientCallError{
 				isBizError: true,

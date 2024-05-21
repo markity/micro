@@ -71,7 +71,7 @@ import (
 
 type {{ .ServiceNameFirstCharUpper }}Client interface {
 	{{- range .AllMethods }}
-	{{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, *_micro_errcode.ClientCallError)
+	{{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, _micro_errcode.ClientCallError)
 	{{- end}}
 }
 
@@ -81,7 +81,7 @@ type {{ .ServiceLowerName }}Client struct {
 }
 
 {{- range .AllMethods }}
-func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, *_micro_errcode.ClientCallError) {
+func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, _micro_errcode.ClientCallError) {
 	result1Iface, result2 := cli.cliStub.Call("{{ .RawName }}", req)
 	if result1Iface != nil {
 		return result1Iface.(*_proto_2.EchoResponse), result2

@@ -21,11 +21,11 @@ type MicroClient interface {
 
 type microClient struct {
 	serviceName     string
-	handles         map[string]*handleinfo.HandleInfo
+	handles         map[string]handleinfo.HandleInfo
 	timeoutDuration time.Duration
 }
 
-func NewClient(serviceName string, handles map[string]*handleinfo.HandleInfo) MicroClient {
+func NewClient(serviceName string, handles map[string]handleinfo.HandleInfo) MicroClient {
 	return &microClient{
 		serviceName:     serviceName,
 		handles:         handles,

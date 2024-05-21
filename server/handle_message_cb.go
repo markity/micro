@@ -74,7 +74,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 		if err != nil {
 			panic(err)
 		}
-		protoBody = marshalBytes
+		protoBytes = marshalBytes
 	}
 	if !result2.IsNil() {
 		resultErrcode := result2.Interface().(*errcode.ErrCode)

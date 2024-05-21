@@ -24,3 +24,4 @@ type ProtocolErrorType byte
 var ProtocolErrorTypeSuccess ProtocolErrorType = 0
 var ProtocolErrorTypeHandleNameInvalid ProtocolErrorType = 1
 var ProtocolErrorTypeParseProtoFailed ProtocolErrorType = 2
+var ProtocolErrorUnexpected ProtocolErrorType = 3

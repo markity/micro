@@ -34,9 +34,11 @@ func (pe *ProtocolError) Error() string {
 		return "handle name invalid"
 	case protocol.ProtocolErrorTypeParseProtoFailed:
 		return "parse proto failed"
+	case protocol.ProtocolErrorUnexpected:
+		return "unexpected"
 	}
 
-	return "unexpected"
+	return "unknown"
 }
 
 func IsNetworkError(err error) bool {

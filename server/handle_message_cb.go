@@ -86,6 +86,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 		errorBytes = buf.Bytes()
 	}
 
+	conn.Send([]byte{byte(protocol.ProtocolErrorTypeSuccess)})
 	var tmp [4]byte
 	binary.BigEndian.PutUint32(tmp[:], uint32(len(protoBytes)))
 	conn.Send(tmp[:])

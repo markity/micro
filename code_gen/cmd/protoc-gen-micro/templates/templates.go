@@ -57,3 +57,40 @@ func (svc *UnimplementedService) {{ .RawName }}(ctx context.Context, req *{{ .Ar
 }
 {{- end}}
 `
+
+var ClientDotGo = `
+package echo
+
+import (
+	_micro_client "github.com/markity/micro/client"
+	{{- range .ImportPaths }}
+	{{ .Alias }} {{ .ImportPath }}
+	{{- end }}
+)
+
+type {{ .ServiceNameFirstCharUpper }}Client interface {
+	{{- range .AllMethods }}
+	{{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, error)
+	{{- end}}
+}
+
+type {{ .ServiceLowerName }}Client struct {
+	serviceName string
+	cliStub     _micro_client.MicroClient
+}
+
+{{- range .AllMethods }}
+func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, error) {
+	result1Iface, result2 := cli.cliStub.Call("{{ .RawName }}", req)
+	if result1Iface != nil {
+		return result1Iface.(*_proto_2.EchoResponse), result2
+	}
+	return nil, result2
+}
+{{- end}}
+
+func NewClient(serviceName string) {{ .ServiceNameFirstCharUpper }}Client {
+	_micro_client.NewClient(serviceName, serviceMethods)
+	return &{{ .ServiceLowerName }}Client{serviceName: serviceName}
+}
+`

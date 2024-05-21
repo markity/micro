@@ -210,8 +210,33 @@ func main() {
 					panic(err)
 				}
 				tmpServer.Execute(serverFile, serverFileInput)
+
 				clientFile := plugin.NewGeneratedFile(genClientDotGo, "")
-				clientFile.P("package " + lowerServiceName)
+				clientFileInput := struct {
+					ServiceLowerName string
+					ServiceName      string
+					AllMethods       []struct {
+						RawName      string
+						ArgStructStr string
+						ResStructStr string
+					}
+					ImportPaths []struct {
+						Alias      string
+						ImportPath string
+					}
+					ServiceNameFirstCharUpper string
+				}{
+					ServiceLowerName:          lowerServiceName,
+					ServiceName:               service.GoName,
+					AllMethods:                serviceFileInput.AllMethods,
+					ImportPaths:               importPaths,
+					ServiceNameFirstCharUpper: strings.ToUpper(service.GoName)[0:1] + service.GoName[1:],
+				}
+				tmpClient, err := template.New("").Parse(templates.ClientDotGo)
+				if err != nil {
+					panic(err)
+				}
+				tmpClient.Execute(clientFile, clientFileInput)
 			}
 		}
 	}

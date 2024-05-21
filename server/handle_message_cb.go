@@ -15,17 +15,18 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var double0Uint64Byts = []byte{0, 0, 0, 0, 0, 0, 0, 0}
+var double0Uint32Byts = []byte{0, 0, 0, 0, 0, 0, 0, 0}
 
 func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
-	if buf.ReadableBytes() < 8 {
+	readableLength := buf.ReadableBytes()
+	if readableLength < 8 {
 		return
 	}
 
 	// 检查是否够取
-	handleNameSize := binary.BigEndian.Uint64(buf.Peek()[0:4])
-	protoBodySize := binary.BigEndian.Uint64(buf.Peek()[5:8])
-	if buf.ReadableBytes() < int(handleNameSize)+int(protoBodySize)+8 {
+	handleNameSize := binary.BigEndian.Uint32(buf.Peek()[0:4])
+	protoBodySize := binary.BigEndian.Uint32(buf.Peek()[4:8])
+	if readableLength < int(handleNameSize)+int(protoBodySize)+8 {
 		return
 	}
 
@@ -41,7 +42,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 	handle, ok := handinfos[handleName]
 	if !ok {
 		conn.Send([]byte{byte(protocol.ProtocolErrorTypeHandleNameInvalid)})
-		conn.Send(double0Uint64Byts)
+		conn.Send(double0Uint32Byts)
 		return
 	}
 
@@ -50,7 +51,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 
 	if err := proto.Unmarshal(protoBody, reqReflectValue.Interface().(proto.Message)); err != nil {
 		conn.Send([]byte{byte(protocol.ProtocolErrorTypeParseProtoFailed)})
-		conn.Send(double0Uint64Byts)
+		conn.Send(double0Uint32Byts)
 		return
 	}
 

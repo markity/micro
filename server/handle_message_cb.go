@@ -46,7 +46,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 		return
 	}
 
-	reqReflectValue := reflect.New(reflect.TypeOf(handle.Request))
+	reqReflectValue := reflect.New(reflect.TypeOf(handle.Request)).Elem()
 	implementReflectValue := reflect.ValueOf(implement)
 
 	if err := proto.Unmarshal(protoBody, reqReflectValue.Interface().(proto.Message)); err != nil {

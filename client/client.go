@@ -144,7 +144,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 	var result1 interface{}
 	var result2 interface{}
 	if hasProtoResult {
-		protoVal := reflect.New(reflect.TypeOf(handle.Request)).Interface().(proto.Message)
+		protoVal := reflect.New(reflect.TypeOf(handle.Request)).Elem().Interface().(proto.Message)
 		err := proto.Unmarshal(protoBytes, protoVal)
 		if err != nil {
 			return nil, &errcode.ProtocolError{

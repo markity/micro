@@ -69,12 +69,12 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 	var protoBytes []byte
 	var errorBytes []byte
 	if !result1.IsNil() {
-		var err error
 		resultMessage := result1.Interface().(proto.Message)
-		protoBody, err = proto.Marshal(resultMessage)
+		marshalBytes, err := proto.Marshal(resultMessage)
 		if err != nil {
 			panic(err)
 		}
+		protoBody = marshalBytes
 	}
 	if !result2.IsNil() {
 		resultErrcode := result2.Interface().(*errcode.ErrCode)

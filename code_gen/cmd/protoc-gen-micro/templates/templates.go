@@ -91,6 +91,9 @@ func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr 
 
 func NewClient(serviceName string) {{ .ServiceNameFirstCharUpper }}Client {
 	_micro_client.NewClient(serviceName, serviceMethods)
-	return &{{ .ServiceLowerName }}Client{serviceName: serviceName}
+	return &{{ .ServiceLowerName }}Client{
+		serviceName: serviceName,
+		cliStub:     _micro_client.NewClient(serviceName, serviceMethods),
+	}
 }
 `

@@ -144,7 +144,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 	}
 
 	var result1 interface{}
-	var result2 interface{}
+	var result2 error
 	if hasProtoResult {
 		protoVal := reflect.New(reflect.TypeOf(handle.Request).Elem()).Interface().(proto.Message)
 		err := proto.Unmarshal(protoBytes, protoVal)
@@ -163,8 +163,8 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 				Code: protocol.ProtocolErrorTypeParseProtoFailed,
 			}
 		}
-		result2 = ec
+		result2 = &ec
 	}
 
-	return result1, result2.(error)
+	return result1, result2
 }

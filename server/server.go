@@ -36,6 +36,12 @@ func NewServer(serviceName string, addrPort string, implementedServer interface{
 	baseLoop.SetContext(serviceNameContextKey, serviceName)
 	baseLoop.SetContext(implementedServerContextKey, implementedServer)
 	baseLoop.SetContext(handlesContextKey, handles)
+	_, loops := reactorServer.GetAllLoops()
+	for _, loop := range loops {
+		loop.SetContext(serviceNameContextKey, serviceName)
+		loop.SetContext(implementedServerContextKey, implementedServer)
+		loop.SetContext(handlesContextKey, handles)
+	}
 	return &microServer{
 		baseLoop: baseLoop,
 		server:   reactorServer,

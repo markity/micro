@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"net"
 	"reflect"
@@ -80,6 +81,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 		var preBytes [9]byte
 		_, err = io.ReadFull(conn, preBytes[:])
 		if err != nil {
+			fmt.Println(err)
 			networkError = &errcode.NetworkError{}
 			return
 		}

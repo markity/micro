@@ -41,7 +41,7 @@ type {{ .ServiceNameFirstCharUpper }} interface {
 	{{- end}}
 }
 
-func NewServer(serviceName string, addrPort string, implementedServer Echo) _micro_server.MicroServer {
+func NewServer(serviceName string, addrPort string, implementedServer {{ .ServiceNameFirstCharUpper }}) _micro_server.MicroServer {
 	return _micro_server.NewServer(serviceName, addrPort, implementedServer, serviceMethods)
 }
 
@@ -84,7 +84,7 @@ type {{ .ServiceLowerName }}Client struct {
 func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, _micro_errcode.ClientCallError) {
 	result1Iface, result2 := cli.cliStub.Call("{{ .RawName }}", req)
 	if result1Iface != nil {
-		return result1Iface.(*_proto_2.EchoResponse), result2
+		return result1Iface.(*{{.ResStructStr}}), result2
 	}
 	return nil, result2
 }

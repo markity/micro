@@ -7,13 +7,21 @@ import (
 	"io"
 	"net"
 	"reflect"
+	"sync"
 	"time"
 
+	"github.com/markity/micro/client/options"
 	"github.com/markity/micro/errx"
 	"github.com/markity/micro/handleinfo"
 	"github.com/markity/micro/internal/protocol"
+	"github.com/markity/micro/plugin/discovery"
+	"github.com/markity/micro/plugin/load_balance/roundrobin"
 	"google.golang.org/protobuf/proto"
 )
+
+var defaultOpts = []options.Option{
+	options.WithLoadBalance(roundrobin.NewRoundRobin()),
+}
 
 type MicroClient interface {
 	Call(handleName string, input proto.Message) (interface{}, errx.ClientCallError)
@@ -23,18 +31,57 @@ type microClient struct {
 	serviceName     string
 	handles         map[string]handleinfo.HandleInfo
 	timeoutDuration time.Duration
+	ops             *options.Options
+
+	instanceMu sync.Mutex
+	instances  []discovery.ServiceInstance
 }
 
-func NewClient(serviceName string, handles map[string]handleinfo.HandleInfo) MicroClient {
-	return &microClient{
+func NewClient(serviceName string, handles map[string]handleinfo.HandleInfo, opts ...options.Option) MicroClient {
+	var ops options.Options
+	for _, v := range defaultOpts {
+		v.F(&ops)
+	}
+	for _, v := range opts {
+		v.F(&ops)
+	}
+	var instances []discovery.ServiceInstance = ops.Discovery.GetInitInstances(serviceName)
+	if ops.Discovery != nil {
+		instances = ops.Discovery.GetInitInstances(serviceName)
+	}
+	cli := &microClient{
 		serviceName:     serviceName,
 		handles:         handles,
 		timeoutDuration: time.Second * 3,
+		ops:             &ops,
+		instances:       instances,
 	}
+	go func() {
+		var mu = &cli.instanceMu
+		var ins = &cli.instances
+		var disc = ops.Discovery
+		for {
+			newInstances := disc.BlockGetNewInstances(serviceName)
+			mu.Lock()
+			*ins = newInstances
+			mu.Unlock()
+		}
+	}()
+
+	return cli
 }
 
 // error is either errx.errx or errx.NetworkError or errx.ProtocolError
 func (cli *microClient) Call(handleName string, input proto.Message) (interface{}, errx.ClientCallError) {
+	cli.instanceMu.Lock()
+	if len(cli.instances) == 0 {
+		return nil, &clientCallError{
+			IsNoInstance: true,
+		}
+	}
+	ins := cli.ops.LoadBalance.GetNext(cli.instances)
+	cli.instanceMu.Unlock()
+
 	inputMarshalBytes, err := proto.Marshal(input)
 	if err != nil {
 		panic(err)
@@ -57,7 +104,7 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 
 		// 建立连接
 		beforeDial := time.Now()
-		conn, err := net.DialTimeout("tcp", cli.serviceName, cli.timeoutDuration)
+		conn, err := net.DialTimeout("tcp", ins.IPPort, cli.timeoutDuration)
 		if err != nil {
 			networkError = err
 			return
@@ -162,6 +209,7 @@ type clientCallError struct {
 	isProtocolError bool
 	isBusyError     bool
 	isBizError      bool
+	IsNoInstance    bool
 
 	bizError     *errx.BizError
 	networkError error
@@ -179,4 +227,7 @@ func (e *clientCallError) IsProtocolError() bool {
 }
 func (e *clientCallError) IsBusyError() (*errx.ServiceBusyError, bool) {
 	return e.busyError, e.isBusyError
+}
+func (e *clientCallError) IsNoInstanceError() bool {
+	return true
 }

@@ -32,5 +32,5 @@ type ClientCallError interface {
 	IsBizError() (*BizError, bool)          // 业务错误, 带业务错误代码和信息, 也可以携带自定义数据
 	IsBusyError() (*ServiceBusyError, bool) // 代表业务正忙
 	IsProtocolError() bool                  // 协议错误, 这个错误仅仅是用来提醒开发者检查"自身错误"的，可能是客户端和服务端用的生成的代码版本不一致
-	// 熔断和重试: 可自行配置重试策略, 非BizError会触发熔断策略和重试策略
+	IsNoInstanceError() bool                // 服务发现没有发现实例
 }

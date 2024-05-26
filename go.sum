@@ -2,8 +2,6 @@ github.com/cpuguy83/go-md2man/v2 v2.0.3/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46t
 github.com/google/go-cmp v0.5.5 h1:Khx7svrCpmxxtHBq5j2mp/xVjsi8hQMfNLvJFAlrGgU=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/markity/go-reactor v0.0.0-20240504063459-b9eb805192f9 h1:PwbD3mP8eLeQJNKw2XfRucKojM+2gFlfDj+yJPYUho0=
-github.com/markity/go-reactor v0.0.0-20240504063459-b9eb805192f9/go.mod h1:aI5RscA9vfDvUJmhhqSJPn9jTzI67n+LPBPkKjOSxz8=
 github.com/markity/go-reactor v0.0.0-20240526080743-d22d926802d4 h1:xKKy95T+V/VZeBRJwngHX4uGkOn1JBxsHKQSQ5e7NY4=
 github.com/markity/go-reactor v0.0.0-20240526080743-d22d926802d4/go.mod h1:aI5RscA9vfDvUJmhhqSJPn9jTzI67n+LPBPkKjOSxz8=
 github.com/petermattis/goid v0.0.0-20240503122002-4b96552b8156 h1:UOk0WKXxKXmHSlIkwQNhT5AWlMtkijU5pfj8bCOI9vQ=

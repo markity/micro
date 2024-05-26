@@ -2,6 +2,9 @@ package options
 
 // 会在服务注册之后调用
 func WithDoAfterRunHook(f func()) Option {
+	if f == nil {
+		panic("unexpected nil")
+	}
 	return Option{
 		F: func(o *Options) {
 			o.DoAfterRunHook = f

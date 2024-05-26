@@ -5,8 +5,11 @@ import (
 	eventloop "github.com/markity/go-reactor/pkg/event_loop"
 	"github.com/markity/micro/handleinfo"
 	"github.com/markity/micro/internal/utils"
+	"github.com/markity/micro/plugin/discovery/ipport"
 	"github.com/markity/micro/server/options"
 )
+
+var defaultOps = []options.Option{options.WithRegistry(ipport.NewIPPortRegistery())}
 
 type MicroServer interface {
 	Run() error
@@ -87,6 +90,9 @@ func NewServer(serviceName string, addrPort string, implementedServer interface{
 		loop.SetContext(handlesContextKey, handles)
 	}
 	options := &options.Options{}
+	for _, opt := range defaultOps {
+		opt.F(options)
+	}
 	for _, opt := range opts {
 		opt.F(options)
 	}

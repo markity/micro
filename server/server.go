@@ -4,7 +4,7 @@ import (
 	goreactor "github.com/markity/go-reactor"
 	eventloop "github.com/markity/go-reactor/pkg/event_loop"
 	"github.com/markity/micro/handleinfo"
-	"github.com/markity/micro/utils"
+	"github.com/markity/micro/internal/utils"
 )
 
 type MicroServer interface {

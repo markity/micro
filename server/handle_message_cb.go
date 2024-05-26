@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/gob"
-	"fmt"
 	"reflect"
 
 	goreactor "github.com/markity/go-reactor"
@@ -105,6 +104,4 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 
 	conn.Send(protoBytes)
 	conn.Send(errorBytes)
-	fmt.Println(protoBytes)
-	fmt.Println(errorBytes)
 }

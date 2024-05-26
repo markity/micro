@@ -10,7 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/markity/micro/code_gen/util"
+	"github.com/markity/micro/internal/code_gen/util"
 
 	"github.com/spf13/cobra"
 )

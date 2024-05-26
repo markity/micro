@@ -8,8 +8,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/markity/micro/code_gen/cmd/protoc-gen-micro/templates"
-	"github.com/markity/micro/code_gen/util"
+	"github.com/markity/micro/internal/code_gen/cmd/protoc-gen-micro/templates"
+	"github.com/markity/micro/internal/code_gen/util"
 
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/compiler/protogen"

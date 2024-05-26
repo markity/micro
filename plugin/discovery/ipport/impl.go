@@ -6,13 +6,13 @@ type ipportDiscovery struct {
 	ipport string
 }
 
-func (ipportDiscovery) GetInitInstances(serviceName string) []discovery.ServiceInstance {
+func (d *ipportDiscovery) GetInitInstances(serviceName string) []discovery.ServiceInstance {
 	return []discovery.ServiceInstance{
-		{ServiceName: serviceName, IPPort: serviceName, Weight: 1},
+		{ServiceName: serviceName, IPPort: d.ipport, Weight: 1},
 	}
 }
 
-func (ipportDiscovery) BlockGetNewInstances(serviceName string) []discovery.ServiceInstance {
+func (*ipportDiscovery) BlockGetNewInstances(serviceName string) []discovery.ServiceInstance {
 	// block forever
 	select {}
 }

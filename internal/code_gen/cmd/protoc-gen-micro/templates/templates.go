@@ -65,6 +65,7 @@ package echo
 import (
 	_micro_client "github.com/markity/micro/client"
 	_micro_errx "github.com/markity/micro/errx"
+	_micro_options "github.com/markity/micro/client/options"
 	{{- range .ImportPaths }}
 	{{ .Alias }} {{ .ImportPath }}
 	{{- end }}
@@ -91,10 +92,10 @@ func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr 
 }
 {{- end}}
 
-func NewClient(serviceName string) {{ .ServiceNameFirstCharUpper }}Client {
+func NewClient(serviceName string, opts ..._micro_options.Option) {{ .ServiceNameFirstCharUpper }}Client {
 	return &{{ .ServiceLowerName }}Client{
 		serviceName: serviceName,
-		cliStub:     _micro_client.NewClient(serviceName, serviceMethods),
+		cliStub:     _micro_client.NewClient(serviceName, serviceMethods, opts...),
 	}
 }
 `

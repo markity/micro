@@ -10,6 +10,7 @@ import (
 
 type MicroServer interface {
 	Run() error
+	With(opts ...options.Option)
 	Stop()
 }
 

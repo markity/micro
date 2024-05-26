@@ -45,6 +45,9 @@ func NewClient(serviceName string, handles map[string]handleinfo.HandleInfo, opt
 	for _, v := range opts {
 		v.F(&ops)
 	}
+	if ops.Discovery == nil {
+		panic("discovery is necessary")
+	}
 	var instances []discovery.ServiceInstance = ops.Discovery.GetInitInstances(serviceName)
 	if ops.Discovery != nil {
 		instances = ops.Discovery.GetInitInstances(serviceName)

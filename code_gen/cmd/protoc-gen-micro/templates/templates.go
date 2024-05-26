@@ -37,7 +37,7 @@ import (
 
 type {{ .ServiceNameFirstCharUpper }} interface {
 	{{- range .AllMethods }}
-	{{ .RawName }}(ctx context.Context, req *{{ .ArgStructStr }}) (resp *{{.ResStructStr}}, err *_micro_errx.ErrX)
+	{{ .RawName }}(ctx context.Context, req *{{ .ArgStructStr }}) (resp *{{.ResStructStr}}, err _micro_errx.ErrX)
 	{{- end}}
 }
 
@@ -48,11 +48,11 @@ func NewServer(serviceName string, addrPort string, implementedServer {{ .Servic
 type UnimplementedService struct {}
 
 {{- range .AllMethods }}
-func (svc *UnimplementedService) {{ .RawName }}(ctx context.Context, req *{{ .ArgStructStr }}) (resp *{{.ResStructStr}}, err *_micro_errx.ErrX) {
+func (svc *UnimplementedService) {{ .RawName }}(ctx context.Context, req *{{ .ArgStructStr }}) (resp *{{.ResStructStr}}, err _micro_errx.ErrX) {
 	return nil, &_micro_errx.BizError{
 		Code: 404,
 		Msg: "unimplemented",
-		Data: nil,
+		ExtraData: "",
 	}
 }
 {{- end}}

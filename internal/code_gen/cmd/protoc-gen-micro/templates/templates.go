@@ -30,6 +30,7 @@ import (
 	"context"
 	_micro_errx "github.com/markity/micro/errx"
 	_micro_server "github.com/markity/micro/server"
+	_micro_options "github.com/markity/micro/server/options"
 	{{- range .ImportPaths }}
 	{{ .Alias }} {{ .ImportPath }}
 	{{- end }}
@@ -41,8 +42,8 @@ type {{ .ServiceNameFirstCharUpper }} interface {
 	{{- end}}
 }
 
-func NewServer(serviceName string, addrPort string, implementedServer {{ .ServiceNameFirstCharUpper }}) _micro_server.MicroServer {
-	return _micro_server.NewServer(serviceName, addrPort, implementedServer, serviceMethods)
+func NewServer(serviceName string, addrPort string, implementedServer {{ .ServiceNameFirstCharUpper }}, opts ..._micro_options.Option) _micro_server.MicroServer {
+	return _micro_server.NewServer(serviceName, addrPort, implementedServer, serviceMethods, opts...)
 }
 
 type UnimplementedService struct {}
@@ -91,7 +92,6 @@ func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr 
 {{- end}}
 
 func NewClient(serviceName string) {{ .ServiceNameFirstCharUpper }}Client {
-	_micro_client.NewClient(serviceName, serviceMethods)
 	return &{{ .ServiceLowerName }}Client{
 		serviceName: serviceName,
 		cliStub:     _micro_client.NewClient(serviceName, serviceMethods),

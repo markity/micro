@@ -5,30 +5,57 @@ import (
 	eventloop "github.com/markity/go-reactor/pkg/event_loop"
 	"github.com/markity/micro/handleinfo"
 	"github.com/markity/micro/internal/utils"
+	"github.com/markity/micro/server/options"
 )
 
 type MicroServer interface {
 	Run() error
+	Stop()
 }
 
 type microServer struct {
-	baseLoop eventloop.EventLoop
-	server   goreactor.TCPServer
+	serverStarted bool
+
+	serviceName string
+	addrPort    string
+	options     *options.Options
+	baseLoop    eventloop.EventLoop
+	server      goreactor.TCPServer
 }
 
 func (ms *microServer) Run() error {
-	if err := ms.server.Start(); err != nil {
-		return err
+	// 先bind address, 再注册服务发现
+	if !ms.serverStarted {
+		if err := ms.server.Start(); err != nil {
+			return err
+		}
+		ms.serverStarted = true
+	}
+
+	// 服务发现插件
+	if ms.options.Registry != nil {
+		err := ms.options.Registry.Register(ms.serviceName, ms.addrPort)
+		if err != nil {
+			return err
+		}
+
+		ms.baseLoop.DoOnStop(func(el eventloop.EventLoop) {
+			ms.options.Registry.DeRegister(ms.serviceName, ms.addrPort)
+		})
 	}
 	ms.baseLoop.Loop()
 	return nil
+}
+
+func (ms *microServer) Stop() {
+	ms.baseLoop.Stop()
 }
 
 var serviceNameContextKey = "svc_name"
 var implementedServerContextKey = "implement"
 var handlesContextKey = "handle_info"
 
-func NewServer(serviceName string, addrPort string, implementedServer interface{}, handles map[string]handleinfo.HandleInfo) MicroServer {
+func NewServer(serviceName string, addrPort string, implementedServer interface{}, handles map[string]handleinfo.HandleInfo, opts ...options.Option) MicroServer {
 	baseLoop := eventloop.NewEventLoop()
 	reactorServer := goreactor.NewTCPServer(baseLoop, addrPort, utils.GetNThreads(), goreactor.RoundRobin())
 	reactorServer.SetConnectionCallback(handleConn)
@@ -42,8 +69,15 @@ func NewServer(serviceName string, addrPort string, implementedServer interface{
 		loop.SetContext(implementedServerContextKey, implementedServer)
 		loop.SetContext(handlesContextKey, handles)
 	}
+	options := &options.Options{}
+	for _, opt := range opts {
+		opt.F(options)
+	}
 	return &microServer{
-		baseLoop: baseLoop,
-		server:   reactorServer,
+		serviceName: serviceName,
+		addrPort:    addrPort,
+		baseLoop:    baseLoop,
+		server:      reactorServer,
+		options:     options,
 	}
 }

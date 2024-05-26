@@ -28,7 +28,7 @@ package {{ .ServiceLowerName }}
 
 import (
 	"context"
-	_micro_errcode "github.com/markity/micro/errcode"
+	_micro_errx "github.com/markity/micro/errx"
 	_micro_server "github.com/markity/micro/server"
 	{{- range .ImportPaths }}
 	{{ .Alias }} {{ .ImportPath }}
@@ -37,7 +37,7 @@ import (
 
 type {{ .ServiceNameFirstCharUpper }} interface {
 	{{- range .AllMethods }}
-	{{ .RawName }}(ctx context.Context, req *{{ .ArgStructStr }}) (resp *{{.ResStructStr}}, errcode *_micro_errcode.ErrCode)
+	{{ .RawName }}(ctx context.Context, req *{{ .ArgStructStr }}) (resp *{{.ResStructStr}}, err *_micro_errx.ErrX)
 	{{- end}}
 }
 
@@ -48,8 +48,8 @@ func NewServer(serviceName string, addrPort string, implementedServer {{ .Servic
 type UnimplementedService struct {}
 
 {{- range .AllMethods }}
-func (svc *UnimplementedService) {{ .RawName }}(ctx context.Context, req *{{ .ArgStructStr }}) (resp *{{.ResStructStr}}, errcode *_micro_errcode.ErrCode) {
-	return nil, &_micro_errcode.ErrCode{
+func (svc *UnimplementedService) {{ .RawName }}(ctx context.Context, req *{{ .ArgStructStr }}) (resp *{{.ResStructStr}}, err *_micro_errx.ErrX) {
+	return nil, &_micro_errx.BizError{
 		Code: 404,
 		Msg: "unimplemented",
 		Data: nil,
@@ -63,7 +63,7 @@ package echo
 
 import (
 	_micro_client "github.com/markity/micro/client"
-	_micro_errcode "github.com/markity/micro/errcode"
+	_micro_errx "github.com/markity/micro/errx"
 	{{- range .ImportPaths }}
 	{{ .Alias }} {{ .ImportPath }}
 	{{- end }}
@@ -71,7 +71,7 @@ import (
 
 type {{ .ServiceNameFirstCharUpper }}Client interface {
 	{{- range .AllMethods }}
-	{{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, _micro_errcode.ClientCallError)
+	{{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, _micro_errx.ClientCallError)
 	{{- end}}
 }
 
@@ -81,7 +81,7 @@ type {{ .ServiceLowerName }}Client struct {
 }
 
 {{- range .AllMethods }}
-func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, _micro_errcode.ClientCallError) {
+func (cli *{{ $.ServiceLowerName }}Client) {{ .RawName }}(req *{{ .ArgStructStr }}) (*{{.ResStructStr}}, _micro_errx.ClientCallError) {
 	result1Iface, result2 := cli.cliStub.Call("{{ .RawName }}", req)
 	if result1Iface != nil {
 		return result1Iface.(*{{.ResStructStr}}), result2

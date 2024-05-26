@@ -10,9 +10,10 @@ import (
 
 	goreactor "github.com/markity/go-reactor"
 	"github.com/markity/go-reactor/pkg/buffer"
-	"github.com/markity/micro/errcode"
+	"github.com/markity/micro/errx"
 	"github.com/markity/micro/handleinfo"
-	"github.com/markity/micro/protocol"
+	"github.com/markity/micro/internal/protocol"
+	internal_protocol "github.com/markity/micro/internal/protocol"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -42,7 +43,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 
 	handle, ok := handinfos[handleName]
 	if !ok {
-		conn.Send([]byte{byte(protocol.ProtocolErrorTypeHandleNameInvalid)})
+		conn.Send([]byte{byte(protocol.ProtocolErrorUnexpected)})
 		conn.Send(double0Uint32Byts)
 		return
 	}
@@ -51,7 +52,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 	implementReflectValue := reflect.ValueOf(implement)
 
 	if err := proto.Unmarshal(protoBody, reqReflectValue.Interface().(proto.Message)); err != nil {
-		conn.Send([]byte{byte(protocol.ProtocolErrorTypeServerParseProtoFailed)})
+		conn.Send([]byte{byte(protocol.ProtocolErrorUnexpected)})
 		conn.Send(double0Uint32Byts)
 		return
 	}
@@ -78,9 +79,17 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 		protoBytes = marshalBytes
 	}
 	if !result2.IsNil() {
-		resultErrcode := result2.Interface().(*errcode.ErrCode)
+		var resultErrX internal_protocol.ErrXProtocol
+		switch v := result2.Interface().(type) {
+		case *errx.BizError:
+			resultErrX.BE = v
+		case *errx.ServiceBusyError:
+			resultErrX.SBE = v
+		default:
+			panic("error must be one of *errx.BizError or *errx.ServiceBusyError")
+		}
 		buf := bytes.NewBuffer(nil)
-		err := gob.NewEncoder(buf).Encode(resultErrcode)
+		err := gob.NewEncoder(buf).Encode(resultErrX)
 		if err != nil {
 			panic(err)
 		}

@@ -16,14 +16,11 @@ package protocol
 // 协议:
 // 请求: 4字节代表调用名字, 4字节代表proto body的长度
 // 响应: 1字节错误代码, 4字节proto body长度(仅当错误代码为0时)
-// 错误代码定义: 0(success) 1(handleName不存在) 2(解析请求proto错误) 3(有error)
+// 错误代码定义: 0(success) 1(未知协议错误)
 
 type ProtocolErrorType byte
 
 // 错误代码为1或2时 4字节errcode长度 + 4字节proto buf长度 均为 0
 
 var ProtocolErrorTypeSuccess ProtocolErrorType = 0
-var ProtocolErrorTypeHandleNameInvalid ProtocolErrorType = 1      // handlename无法被对方理解
-var ProtocolErrorTypeServerParseProtoFailed ProtocolErrorType = 2 // 服务端处协议错误
-var ProtocolErrorTypeClientParseProtoFailed ProtocolErrorType = 3 // 客户端处协议错误
-var ProtocolErrorUnexpected ProtocolErrorType = 4                 // 未知协议错误
+var ProtocolErrorUnexpected ProtocolErrorType = 1 // 未知协议错误

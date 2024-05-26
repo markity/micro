@@ -61,6 +61,12 @@ func (ms *microServer) Stop() {
 	ms.baseLoop.Stop()
 }
 
+func (ms *microServer) With(opts ...options.Option) {
+	for _, v := range opts {
+		v.F(ms.options)
+	}
+}
+
 var serviceNameContextKey = "svc_name"
 var implementedServerContextKey = "implement"
 var handlesContextKey = "handle_info"

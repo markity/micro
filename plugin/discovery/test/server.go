@@ -10,6 +10,6 @@ func (*MyPlugin) Register(serviceName string, addrPort string) error {
 	return nil
 }
 
-func (*MyPlugin) DeRegister() {
+func (*MyPlugin) DeRegister(serviceName string, addrPort string) {
 	fmt.Println("解除注册")
 }

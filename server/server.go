@@ -39,10 +39,20 @@ func (ms *microServer) Run() error {
 			return err
 		}
 
+		if ms.options.DoAfterRunHook != nil {
+			ms.baseLoop.DoOnLoop(func(el eventloop.EventLoop) {
+				ms.options.DoAfterRunHook()
+			})
+		}
+
 		ms.baseLoop.DoOnStop(func(el eventloop.EventLoop) {
 			ms.options.Registry.DeRegister(ms.serviceName, ms.addrPort)
+			if ms.options.DoAfterStopHook != nil {
+				ms.options.DoAfterStopHook()
+			}
 		})
 	}
+
 	ms.baseLoop.Loop()
 	return nil
 }

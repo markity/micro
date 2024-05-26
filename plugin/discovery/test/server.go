@@ -2,8 +2,7 @@ package test
 
 import "fmt"
 
-type MyPlugin struct {
-}
+type MyPlugin struct{}
 
 func (*MyPlugin) Register(serviceName string, addrPort string) error {
 	fmt.Println("注册")

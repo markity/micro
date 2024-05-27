@@ -62,7 +62,8 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 	}
 	methodType := method_.Type
 	in := reqReflectValue.Convert(methodType.In(2))
-	results := method_.Func.Call([]reflect.Value{implementReflectValue, reflect.ValueOf(context.Background()), in})
+	results := method_.Func.Call([]reflect.Value{implementReflectValue,
+		reflect.ValueOf(conn.GetEventLoop().MustGetContext(ctxContextKey).(context.Context)), in})
 	if len(results) != 2 {
 		panic("unexpected")
 	}

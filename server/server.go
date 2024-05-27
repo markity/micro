@@ -1,6 +1,8 @@
 package server
 
 import (
+	"context"
+
 	goreactor "github.com/markity/go-reactor"
 	eventloop "github.com/markity/go-reactor/pkg/event_loop"
 	"github.com/markity/micro/handleinfo"
@@ -9,7 +11,10 @@ import (
 	"github.com/markity/micro/server/options"
 )
 
-var defaultOps = []options.Option{options.WithRegistry(ipport.NewIPPortRegistery())}
+var defaultOps = []options.Option{
+	options.WithRegistry(ipport.NewIPPortRegistery()),
+	options.WithCtx(context.Background()),
+}
 
 type MicroServer interface {
 	Run() error
@@ -74,8 +79,16 @@ func (ms *microServer) With(opts ...options.Option) {
 var serviceNameContextKey = "svc_name"
 var implementedServerContextKey = "implement"
 var handlesContextKey = "handle_info"
+var ctxContextKey = "ctx"
 
 func NewServer(serviceName string, addrPort string, implementedServer interface{}, handles map[string]handleinfo.HandleInfo, opts ...options.Option) MicroServer {
+	options := &options.Options{}
+	for _, opt := range defaultOps {
+		opt.F(options)
+	}
+	for _, opt := range opts {
+		opt.F(options)
+	}
 	baseLoop := eventloop.NewEventLoop()
 	reactorServer := goreactor.NewTCPServer(baseLoop, addrPort, utils.GetNThreads(), goreactor.RoundRobin())
 	reactorServer.SetConnectionCallback(handleConn)
@@ -83,18 +96,13 @@ func NewServer(serviceName string, addrPort string, implementedServer interface{
 	baseLoop.SetContext(serviceNameContextKey, serviceName)
 	baseLoop.SetContext(implementedServerContextKey, implementedServer)
 	baseLoop.SetContext(handlesContextKey, handles)
+	baseLoop.SetContext(ctxContextKey, options.Ctx)
 	_, loops := reactorServer.GetAllLoops()
 	for _, loop := range loops {
 		loop.SetContext(serviceNameContextKey, serviceName)
 		loop.SetContext(implementedServerContextKey, implementedServer)
 		loop.SetContext(handlesContextKey, handles)
-	}
-	options := &options.Options{}
-	for _, opt := range defaultOps {
-		opt.F(options)
-	}
-	for _, opt := range opts {
-		opt.F(options)
+		baseLoop.SetContext(ctxContextKey, options.Ctx)
 	}
 	return &microServer{
 		serviceName: serviceName,

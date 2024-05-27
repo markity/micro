@@ -19,6 +19,14 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func timeMinor(a time.Time, b time.Time) time.Time {
+	if a.UnixMilli() < b.UnixMilli() {
+		return a
+	}
+
+	return b
+}
+
 var defaultOpts = []options.Option{
 	options.WithLoadBalance(roundrobin.NewRoundRobin()),
 	options.WithTimeout(time.Second * 3),
@@ -34,10 +42,9 @@ type MicroClient interface {
 }
 
 type microClient struct {
-	serviceName     string
-	handles         map[string]handleinfo.HandleInfo
-	timeoutDuration time.Duration
-	ops             *options.Options
+	serviceName string
+	handles     map[string]handleinfo.HandleInfo
+	ops         *options.Options
 
 	instanceMu sync.Mutex
 	instances  []discovery.ServiceInstance
@@ -59,11 +66,10 @@ func NewClient(serviceName string, handles map[string]handleinfo.HandleInfo, opt
 		instances = ops.Discovery.GetInitInstances(serviceName)
 	}
 	cli := &microClient{
-		serviceName:     serviceName,
-		handles:         handles,
-		timeoutDuration: ops.Timeout,
-		ops:             &ops,
-		instances:       instances,
+		serviceName: serviceName,
+		handles:     handles,
+		ops:         &ops,
+		instances:   instances,
 	}
 	go func() {
 		var mu = &cli.instanceMu
@@ -91,6 +97,16 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 	ins := cli.ops.LoadBalance.GetNext(cli.instances)
 	cli.instanceMu.Unlock()
 
+	beforeDial := time.Now()
+
+	retryPolicy := cli.ops.RetryPolocy
+	retryEnabled := false
+	var retryTotalDeadline time.Time
+	if retryPolicy.MaxRetryTimes != 0 {
+		retryEnabled = true
+		retryTotalDeadline = beforeDial.Add(cli.ops.RetryPolocy.MaxTotalDuration)
+	}
+
 	inputMarshalBytes, err := proto.Marshal(input)
 	if err != nil {
 		panic(err)
@@ -100,6 +116,10 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 	if !ok {
 		panic("unexpected")
 	}
+
+	// 记录已经重试多少次了
+	retried := 0
+retry:
 
 	c := make(chan struct{}, 1)
 	var networkError error
@@ -112,15 +132,18 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 		}()
 
 		// 建立连接
-		beforeDial := time.Now()
-		conn, err := net.DialTimeout("tcp", ins.IPPort, cli.timeoutDuration)
+		now := time.Now()
+		thisTimeDeadline := now.Add(cli.ops.Timeout)
+		if retryEnabled {
+			thisTimeDeadline = timeMinor(now.Add(cli.ops.Timeout), retryTotalDeadline)
+		}
+		conn, err := net.DialTimeout("tcp", ins.IPPort, thisTimeDeadline.Sub(now))
 		if err != nil {
 			networkError = err
 			return
 		}
 		defer conn.Close()
-		ddl := beforeDial.Add(cli.timeoutDuration)
-		conn.SetDeadline(ddl)
+		conn.SetDeadline(thisTimeDeadline)
 		var tmp [4]byte
 		binary.BigEndian.PutUint32(tmp[:], uint32(len(handleName)))
 		conn.Write(tmp[:])
@@ -199,6 +222,10 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 	}()
 	<-c
 	if networkError != nil {
+		if retryPolicy.MaxRetryTimes > 0 && retried < retryPolicy.MaxRetryTimes && time.Now().Before(retryTotalDeadline) {
+			retried++
+			goto retry
+		}
 		return nil, &clientCallError{
 			isNetworkError: true,
 			networkError:   networkError,

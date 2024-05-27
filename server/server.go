@@ -102,7 +102,7 @@ func NewServer(serviceName string, addrPort string, implementedServer interface{
 		loop.SetContext(serviceNameContextKey, serviceName)
 		loop.SetContext(implementedServerContextKey, implementedServer)
 		loop.SetContext(handlesContextKey, handles)
-		baseLoop.SetContext(ctxContextKey, options.Ctx)
+		loop.SetContext(ctxContextKey, options.Ctx)
 	}
 	return &microServer{
 		serviceName: serviceName,

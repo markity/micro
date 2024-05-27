@@ -36,5 +36,7 @@ type ClientCallError interface {
 
 	// 熔断策略, 触发条件: NetworkError, BusyError
 
+	// 重试策略: NetworkError
+
 	// 限流策略: 返回BusyError
 }

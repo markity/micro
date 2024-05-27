@@ -21,6 +21,12 @@ import (
 
 var defaultOpts = []options.Option{
 	options.WithLoadBalance(roundrobin.NewRoundRobin()),
+	options.WithTimeout(time.Second * 3),
+	options.WithRetry(options.Retry{
+		MaxRetryTimes:    0,
+		MaxTotalDuration: time.Second * 3,
+		RetrySameNode:    false,
+	}),
 }
 
 type MicroClient interface {
@@ -55,7 +61,7 @@ func NewClient(serviceName string, handles map[string]handleinfo.HandleInfo, opt
 	cli := &microClient{
 		serviceName:     serviceName,
 		handles:         handles,
-		timeoutDuration: time.Second * 3,
+		timeoutDuration: ops.Timeout,
 		ops:             &ops,
 		instances:       instances,
 	}

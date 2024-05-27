@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"io"
+	"math"
 	"net"
 	"reflect"
 	"sync"
@@ -103,6 +104,9 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 	retryEnabled := false
 	var retryTotalDeadline time.Time
 	if retryPolicy.MaxRetryTimes != 0 {
+		if retryPolicy.MaxRetryTimes < 0 {
+			retryPolicy.MaxRetryTimes = math.MaxInt
+		}
 		retryEnabled = true
 		retryTotalDeadline = beforeDial.Add(cli.ops.RetryPolocy.MaxTotalDuration)
 	}
@@ -222,7 +226,7 @@ retry:
 	}()
 	<-c
 	if networkError != nil {
-		if retryPolicy.MaxRetryTimes > 0 && retried < retryPolicy.MaxRetryTimes && time.Now().Before(retryTotalDeadline) {
+		if retryEnabled && retried < retryPolicy.MaxRetryTimes && time.Now().Before(retryTotalDeadline) {
 			retried++
 			goto retry
 		}

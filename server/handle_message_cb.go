@@ -24,6 +24,7 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 	windowLimitIface := conn.GetEventLoop().MustGetContext(windowLimitKey)
 	var windowLimit *utils.WindowLimit
 	if windowLimitIface != nil {
+		qpsLimitEnabled = true
 		windowLimit = windowLimitIface.(*utils.WindowLimit)
 	}
 

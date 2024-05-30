@@ -92,6 +92,7 @@ func NewClient(serviceName string, handles map[string]handleinfo.HandleInfo, opt
 func (cli *microClient) Call(handleName string, input proto.Message) (interface{}, errx.ClientCallError) {
 	cli.instanceMu.Lock()
 	if len(cli.instances) == 0 {
+		cli.instanceMu.Unlock()
 		return nil, &clientCallError{
 			IsNoInstance: true,
 		}
@@ -144,6 +145,7 @@ retry:
 		if !cli.ops.RetryPolocy.RetrySameNode {
 			cli.instanceMu.Lock()
 			if len(cli.instances) == 0 {
+				cli.instanceMu.Unlock()
 				return nil, &clientCallError{
 					IsNoInstance: true,
 				}

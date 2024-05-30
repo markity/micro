@@ -13,12 +13,20 @@ import (
 	"github.com/markity/micro/handleinfo"
 	"github.com/markity/micro/internal/protocol"
 	internal_protocol "github.com/markity/micro/internal/protocol"
+	"github.com/markity/micro/internal/utils"
 	"google.golang.org/protobuf/proto"
 )
 
 var double0Uint32Byts = []byte{0, 0, 0, 0, 0, 0, 0, 0}
 
 func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
+	qpsLimitEnabled := false
+	windowLimitIface := conn.GetEventLoop().MustGetContext(windowLimitKey)
+	var windowLimit *utils.WindowLimit
+	if windowLimitIface != nil {
+		windowLimit = windowLimitIface.(*utils.WindowLimit)
+	}
+
 	readableLength := buf.ReadableBytes()
 	if readableLength < 8 {
 		return
@@ -62,8 +70,16 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 	}
 	methodType := method_.Type
 	in := reqReflectValue.Convert(methodType.In(2))
-	results := method_.Func.Call([]reflect.Value{implementReflectValue,
-		reflect.ValueOf(conn.GetEventLoop().MustGetContext(ctxContextKey).(context.Context)), in})
+
+	// 检查限流策略
+	var results []reflect.Value
+	if qpsLimitEnabled && windowLimit.Add() {
+		results = append(results, reflect.ValueOf(nil),
+			reflect.ValueOf(&errx.ServiceBusyError{Msg: "service is busy(trigger qps limit)"}))
+	} else {
+		results = method_.Func.Call([]reflect.Value{implementReflectValue,
+			reflect.ValueOf(conn.GetEventLoop().MustGetContext(ctxContextKey).(context.Context)), in})
+	}
 	if len(results) != 2 {
 		panic("unexpected")
 	}

@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	goreactor "github.com/markity/go-reactor"
 	eventloop "github.com/markity/go-reactor/pkg/event_loop"
@@ -76,10 +78,18 @@ func (ms *microServer) With(opts ...options.Option) {
 	}
 }
 
+type windowLimit struct {
+	sync.Mutex
+	enabled bool
+	limit   int
+	window  []time.Time
+}
+
 var serviceNameContextKey = "svc_name"
 var implementedServerContextKey = "implement"
 var handlesContextKey = "handle_info"
 var ctxContextKey = "ctx"
+var windowLimitKey = "window_limit"
 
 func NewServer(serviceName string, addrPort string, implementedServer interface{}, handles map[string]handleinfo.HandleInfo, opts ...options.Option) MicroServer {
 	options := &options.Options{}
@@ -89,6 +99,10 @@ func NewServer(serviceName string, addrPort string, implementedServer interface{
 	for _, opt := range opts {
 		opt.F(options)
 	}
+	var windowLimit *utils.WindowLimit
+	if options.QPSLimit != nil {
+		windowLimit = utils.NewWindowLimit(time.Second, *options.QPSLimit)
+	}
 	baseLoop := eventloop.NewEventLoop()
 	reactorServer := goreactor.NewTCPServer(baseLoop, addrPort, utils.GetNThreads(), goreactor.RoundRobin())
 	reactorServer.SetConnectionCallback(handleConn)
@@ -97,12 +111,14 @@ func NewServer(serviceName string, addrPort string, implementedServer interface{
 	baseLoop.SetContext(implementedServerContextKey, implementedServer)
 	baseLoop.SetContext(handlesContextKey, handles)
 	baseLoop.SetContext(ctxContextKey, options.Ctx)
+	baseLoop.SetContext(windowLimitKey, windowLimit)
 	_, loops := reactorServer.GetAllLoops()
 	for _, loop := range loops {
 		loop.SetContext(serviceNameContextKey, serviceName)
 		loop.SetContext(implementedServerContextKey, implementedServer)
 		loop.SetContext(handlesContextKey, handles)
 		loop.SetContext(ctxContextKey, options.Ctx)
+		baseLoop.SetContext(windowLimitKey, windowLimit)
 	}
 	return &microServer{
 		serviceName: serviceName,

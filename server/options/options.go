@@ -11,6 +11,7 @@ type Options struct {
 	DoAfterRunHook  func()
 	DoAfterStopHook func()
 	Ctx             context.Context
+	QPSLimit        *int
 }
 
 type Option struct {

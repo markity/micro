@@ -75,7 +75,9 @@ func handleMessage(conn goreactor.TCPConnection, buf buffer.Buffer) {
 	// 检查限流策略
 	var results []reflect.Value
 	if qpsLimitEnabled && !windowLimit.Add() {
-		results = append(results, reflect.ValueOf(func() {}),
+		// 这里只是给个nil, 让后面走0字节的MessageBody
+		var f func()
+		results = append(results, reflect.ValueOf((f)),
 			reflect.ValueOf(&errx.ServiceBusyError{Msg: "service is busy(trigger qps limit)"}))
 	} else {
 		results = method_.Func.Call([]reflect.Value{implementReflectValue,

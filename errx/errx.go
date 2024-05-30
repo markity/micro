@@ -34,6 +34,8 @@ type ClientCallError interface {
 	IsProtocolError() bool                  // 协议错误, 这个错误仅仅是用来提醒开发者检查"自身错误"的，可能是客户端和服务端用的生成的代码版本不一致
 	IsNoInstanceError() bool                // 服务发现没有发现实例
 
+	String() string
+
 	// 熔断策略, 触发条件: BusyError
 
 	// 重试策略: NetworkError

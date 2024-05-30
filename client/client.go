@@ -299,5 +299,20 @@ func (e *clientCallError) IsBusyError() (*errx.ServiceBusyError, bool) {
 	return e.busyError, e.isBusyError
 }
 func (e *clientCallError) IsNoInstanceError() bool {
-	return true
+	return e.IsNoInstance
+}
+func (e *clientCallError) String() string {
+	switch {
+	case e.isBizError:
+		return e.bizError.ErrXMessage()
+	case e.isBusyError:
+		return e.busyError.ErrXMessage()
+	case e.isNetworkError:
+		return e.networkError.Error()
+	case e.isProtocolError:
+		return "protocol error, check your proto defination!"
+	case e.IsNoInstance:
+		return "no instance found"
+	}
+	return "unexpected"
 }

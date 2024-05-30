@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"math"
 	"math/rand"
@@ -308,11 +309,11 @@ func (e *clientCallError) String() string {
 	case e.isBusyError:
 		return e.busyError.ErrXMessage()
 	case e.isNetworkError:
-		return e.networkError.Error()
+		return fmt.Sprintf("network error: %v", e.networkError.Error())
 	case e.isProtocolError:
-		return "protocol error, check your proto defination!"
+		return "protocol error: check your proto defination!"
 	case e.IsNoInstance:
-		return "no instance found"
+		return "no instance found error"
 	}
 	return "unexpected"
 }

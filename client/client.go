@@ -5,7 +5,9 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"io"
+	"log"
 	"math"
+	"math/rand"
 	"net"
 	"reflect"
 	"sync"
@@ -121,9 +123,36 @@ func (cli *microClient) Call(handleName string, input proto.Message) (interface{
 		panic("unexpected")
 	}
 
+	ins = cli.ops.LoadBalance.GetNext(cli.instances)
+
 	// 记录已经重试多少次了
 	retried := 0
 retry:
+
+	// 如果没有开启RetrySameNode, 可以重新拿一个
+	if retried != 0 {
+		// 检查backoff策略
+		if cli.ops.RetryPolocy.BackoffPolocy.Type == options.RetryBackoffPolicyTypeRangeTime {
+			minTime := cli.ops.RetryPolocy.BackoffPolocy.TimeMin
+			maxTime := cli.ops.RetryPolocy.BackoffPolocy.TimeMax
+			time.Sleep(time.Duration(
+				int64(minTime) +
+					rand.Int63()%(int64(maxTime)-(int64(minTime))),
+			))
+		}
+
+		// 换新节点
+		if !cli.ops.RetryPolocy.RetrySameNode {
+			cli.instanceMu.Lock()
+			if len(cli.instances) == 0 {
+				return nil, &clientCallError{
+					IsNoInstance: true,
+				}
+			}
+			ins = cli.ops.LoadBalance.GetNext(cli.instances)
+			cli.instanceMu.Unlock()
+		}
+	}
 
 	c := make(chan struct{}, 1)
 	var networkError error
@@ -141,6 +170,7 @@ retry:
 		if retryEnabled {
 			thisTimeDeadline = timeMinor(now.Add(cli.ops.Timeout), retryTotalDeadline)
 		}
+		log.Println("连接")
 		conn, err := net.DialTimeout("tcp", ins.IPPort, thisTimeDeadline.Sub(now))
 		if err != nil {
 			networkError = err

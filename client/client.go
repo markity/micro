@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"io"
-	"log"
 	"math"
 	"math/rand"
 	"net"
@@ -170,7 +169,6 @@ retry:
 		if retryEnabled {
 			thisTimeDeadline = timeMinor(now.Add(cli.ops.Timeout), retryTotalDeadline)
 		}
-		log.Println("连接")
 		conn, err := net.DialTimeout("tcp", ins.IPPort, thisTimeDeadline.Sub(now))
 		if err != nil {
 			networkError = err
